@@ -70,81 +70,83 @@ FORM;
         'notes' => 'Notes',
     ];
     foreach ($object->cards as $key => $value) {
-        $index++;
+        if ($value->closed == false) {
+            $index++;
 
-        $member = [];
-        if (is_array($value->idMembers)) {
-            foreach ($value->idMembers as $k => $v) {
-                $member[] = $members[$v];
+            $member = [];
+            if (is_array($value->idMembers)) {
+                foreach ($value->idMembers as $k => $v) {
+                    $member[] = $members[$v];
+                }
             }
-        }
 
-        $label = [];
-        if (is_array($value->idLabels)) {
-            foreach ($value->idLabels as $k => $v) {
-                $label[] = $labels[$v];
+            $label = [];
+            if (is_array($value->idLabels)) {
+                foreach ($value->idLabels as $k => $v) {
+                    $label[] = $labels[$v];
+                }
             }
+
+            $dueTime = strtotime($value->due);
+            $due = date('Y-m-d', $dueTime);
+
+            $firstAction = [];
+            $requestBy = '';
+            $createdDate = '';
+            $reviewDate = '';
+            $doneDate = '';
+            $diffReview = '';
+            $diffDone = '';
+            $diff = '';
+            if (isset($actionCard[$value->id])) {
+                $firstAction = end($actionCard[$value->id]);
+                $requestBy = $firstAction->memberCreator->fullName;
+                
+                $createdDateTime = strtotime($firstAction->date);
+                $createdDate = date('Y-m-d', $createdDateTime);
+            }
+
+            if (isset($reviewCard[$value->id])) {
+                $latestActionReview = reset($reviewCard[$value->id]);
+                
+                $reviewDateTime = strtotime($latestActionReview->date);
+                $reviewDate = date('Y-m-d', $reviewDateTime);
+
+                $date1 = new DateTime($due);
+                $date2 = new DateTime($reviewDate);
+                $interval = $date1->diff($date2);
+                $diffReview = $interval->format('%r%a');
+            }
+
+            if (isset($doneCard[$value->id])) {
+                $latestActionDone = reset($doneCard[$value->id]);
+                
+                $doneDateTime = strtotime($latestActionDone->date);
+                $doneDate = date('Y-m-d', $doneDateTime);
+
+                $date1 = new DateTime($due);
+                $date2 = new DateTime($doneDate);
+                $interval = $date1->diff($date2);
+                $diffDone = $interval->format('%r%a');
+            }
+            if ($due != '1970-01-01') {
+                $diff = $reviewDate ? $diffReview : $diffDone;
+            }
+            $data[$index] = [
+                'no' => $index,
+                'task' => $value->name,
+                'assign' => implode(', ', $member),
+                'status' => $lists[$value->idList],
+                'label' => implode(', ', $label),
+                'request_by' => $requestBy,
+                'created_date' => $createdDate,
+                'due_date' => $due != '1970-01-01' ? $due : '',
+                'done_date' => $reviewDate ? $reviewDate : $doneDate,
+                'diff' => $diff,
+                'trello' => $value->shortUrl,
+                'notes' => '',
+            ];
         }
-
-        $dueTime = strtotime($value->due);
-        $due = date('Y-m-d', $dueTime);
-
-        $firstAction = [];
-        $requestBy = '';
-        $createdDate = '';
-        $reviewDate = '';
-        $doneDate = '';
-        $diffReview = '';
-        $diffDone = '';
-        $diff = '';
-        if (isset($actionCard[$value->id])) {
-            $firstAction = end($actionCard[$value->id]);
-            $requestBy = $firstAction->memberCreator->fullName;
-            
-            $createdDateTime = strtotime($firstAction->date);
-            $createdDate = date('Y-m-d', $createdDateTime);
-        }
-
-        if (isset($reviewCard[$value->id])) {
-            $latestActionReview = reset($reviewCard[$value->id]);
-            
-            $reviewDateTime = strtotime($latestActionReview->date);
-            $reviewDate = date('Y-m-d', $reviewDateTime);
-
-            $date1 = new DateTime($due);
-            $date2 = new DateTime($reviewDate);
-            $interval = $date1->diff($date2);
-            $diffReview = $interval->days;
-        }
-
-        if (isset($doneCard[$value->id])) {
-            $latestActionDone = reset($doneCard[$value->id]);
-            
-            $doneDateTime = strtotime($latestActionDone->date);
-            $doneDate = date('Y-m-d', $doneDateTime);
-
-            $date1 = new DateTime($due);
-            $date2 = new DateTime($doneDate);
-            $interval = $date1->diff($date2);
-            $diffDone = $interval->days;
-        }
-        if ($due != '1970-01-01') {
-            $diff = $diffReview ? $diffReview : $diffDone;
-        }
-        $data[$index] = [
-            'no' => $index,
-            'task' => $value->name,
-            'assign' => implode(', ', $member),
-            'status' => $lists[$value->idList],
-            'label' => implode(', ', $label),
-            'request_by' => $requestBy,
-            'created_date' => $createdDate,
-            'due_date' => $due != '1970-01-01' ? $due : '',
-            'done_date' => $reviewDate ? $reviewDate : $doneDate,
-            'diff' => $diff,
-            'trello' => $value->shortUrl,
-            'notes' => '',
-        ];
     }
 
     $writer = new Box\Spout\Writer\WriterFactory;
