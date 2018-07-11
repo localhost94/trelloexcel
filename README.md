@@ -1,8 +1,9 @@
 # Trello to Excel
-Convert your trello `.json` file to `.csv`
+Convert your trello `.json` file to `.xlsx`
 
 ## Steps
 1. Clone this repository
-2. Put your exported trello `.json` file to root directory of this project
-3. Run the project in browser
-4. Done!
+2. Run the project in browser
+3. Upload your trello `.json` file
+4. Specify your exported file path
+5. Done!
